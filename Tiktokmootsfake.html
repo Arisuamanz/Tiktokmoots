@@ -1,0 +1,675 @@
+```html
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Aplikasi Moots</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    },
+                    colors: {
+                        appBg: '#0f172a', /* slate-900 */
+                        cardBg: 'rgba(30, 41, 59, 0.7)', /* slate-800 dengan opacity */
+                        primary: '#a855f7',
+                        secondary: '#ec4899',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-color: #020617; /* Latar belakang luar kontena */
+            color: #f8fafc;
+            font-family: 'Inter', sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .app-container {
+            background-color: #0f172a;
+            width: 100%;
+            max-width: 420px;
+            height: 100dvh;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 40px rgba(168, 85, 247, 0.1);
+            overflow: hidden;
+        }
+
+        /* Menyembunyikan scrollbar tapi kekalkan fungsi scroll */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+        .glass-card {
+            background: rgba(30, 41, 59, 0.6);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .nav-item {
+            color: #64748b;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .nav-item.active {
+            color: #e879f9;
+            transform: translateY(-2px);
+        }
+
+        .nav-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 4px;
+            height: 4px;
+            background-color: #e879f9;
+            border-radius: 50%;
+        }
+
+        /* Animasi Transisi View */
+        .fade-in {
+            animation: fadeIn 0.3s ease-out forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Animasi Toast */
+        .toast-enter {
+            animation: slideUpToast 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+        @keyframes slideUpToast {
+            from { transform: translateY(100%); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        
+        /* Modal Overlay */
+        .modal-overlay {
+            background: rgba(2, 6, 23, 0.8);
+            backdrop-filter: blur(4px);
+        }
+    </style>
+</head>
+<body>
+
+    <div class="app-container">
+        <!-- Pengepala Utama (Header) -->
+        <header class="h-16 flex items-center justify-between px-6 shrink-0 glass-card z-20 sticky top-0 border-b-0">
+            <div class="w-16"></div> <!-- Spacer -->
+            <h1 id="header-title" class="text-lg font-bold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-purple-400 to-pink-400">
+                Dapatkan Bintang
+            </h1>
+            <div class="w-16 flex justify-end items-center gap-1 bg-slate-800/80 px-3 py-1.5 rounded-full border border-slate-700 shadow-inner">
+                <span id="header-stars" class="font-bold text-sm text-white">65</span>
+                <i class="fa-solid fa-star text-yellow-400 text-xs"></i>
+            </div>
+        </header>
+
+        <!-- Kawasan Kandungan Utama -->
+        <main id="main-content" class="flex-1 overflow-y-auto no-scrollbar p-5 pb-24 relative z-10">
+            
+            <!-- Pandangan 1: Kumpul Bintang -->
+            <div id="view-earn" class="view-section hidden h-full flex flex-col items-center justify-center fade-in">
+                <div class="w-full max-w-[320px] aspect-[4/5] rounded-3xl overflow-hidden relative shadow-2xl shadow-purple-900/20 mb-8 border border-slate-700/50" id="earn-card">
+                    <!-- Kandungan dijana oleh JS -->
+                </div>
+                
+                <div class="flex gap-4 w-full max-w-[320px]">
+                    <button onclick="skipProfile()" class="flex-1 bg-slate-800 hover:bg-slate-700 text-slate-300 font-bold py-4 px-4 rounded-2xl transition-all active:scale-95 shadow-lg border border-slate-700">
+                        Langkau
+                    </button>
+                    <button onclick="earnStars(5)" class="flex-1 bg-gradient-to-r from-purple-600 to-pink-600 hover:opacity-90 text-white font-bold py-4 px-4 rounded-2xl transition-all active:scale-95 shadow-lg shadow-purple-500/30 flex items-center justify-center gap-2">
+                        <i class="fa-solid fa-user-plus"></i> +5 <i class="fa-solid fa-star text-yellow-300"></i>
+                    </button>
+                </div>
+                
+                <p class="text-xs text-slate-400 text-center mt-8 px-4 leading-relaxed font-medium">
+                    Tolong jangan ikuti kemudian nyahikut. Akaun anda mungkin disekat dan bintang akan ditarik balik. Terima kasih.
+                </p>
+            </div>
+
+            <!-- Pandangan 2: Dapatkan Pengikut -->
+            <div id="view-followers" class="view-section hidden fade-in">
+                <div id="followers-profile-header"></div>
+                <div class="space-y-3 mt-6" id="followers-list">
+                    <!-- Dijana oleh JS -->
+                </div>
+            </div>
+
+            <!-- Pandangan 3: Pilih Video (Likes) -->
+            <div id="view-likes" class="view-section hidden fade-in">
+                <p class="text-sm text-slate-400 text-center mb-6">Pilih video untuk dipromosikan</p>
+                <div class="grid grid-cols-3 gap-3" id="video-grid">
+                    <!-- Dijana oleh JS -->
+                </div>
+            </div>
+
+            <!-- Pandangan 4: Kedai Bintang -->
+            <div id="view-store" class="view-section hidden fade-in">
+                <div class="bg-gradient-to-br from-purple-900/40 to-pink-900/40 border border-pink-500/20 rounded-2xl p-6 mb-6 text-center">
+                    <i class="fa-solid fa-crown text-4xl text-yellow-400 mb-3 drop-shadow-[0_0_10px_rgba(250,204,21,0.5)]"></i>
+                    <h2 class="font-bold text-xl mb-1">Tawaran Premium</h2>
+                    <p class="text-sm text-slate-300">Beli bintang untuk mengembangkan akaun anda dengan pantas.</p>
+                </div>
+                <div class="space-y-3" id="store-list">
+                    <!-- Dijana oleh JS -->
+                </div>
+            </div>
+
+            <!-- Pandangan 5: Tetapan -->
+            <div id="view-settings" class="view-section hidden fade-in">
+                <div id="settings-profile-header"></div>
+                <div class="space-y-3 mt-6">
+                    <button id="btn-free-stars" onclick="claimFreeStars()" class="w-full glass-card hover:bg-slate-700/60 p-4 rounded-2xl flex items-center justify-between transition-all active:scale-[0.98]">
+                        <span class="font-bold text-slate-200 flex items-center gap-3">
+                            <div class="bg-yellow-500/20 w-10 h-10 rounded-full flex items-center justify-center text-yellow-400">
+                                <i class="fa-solid fa-gift"></i>
+                            </div>
+                            Bintang Percuma
+                        </span>
+                        <span class="font-bold text-yellow-400">+100 <i class="fa-solid fa-star text-xs"></i></span>
+                    </button>
+                    
+                    <button onclick="openPromoModal()" class="w-full glass-card hover:bg-slate-700/60 p-4 rounded-2xl flex items-center justify-between transition-all active:scale-[0.98]">
+                        <span class="font-bold text-slate-200 flex items-center gap-3">
+                            <div class="bg-blue-500/20 w-10 h-10 rounded-full flex items-center justify-center text-blue-400">
+                                <i class="fa-solid fa-ticket"></i>
+                            </div>
+                            Masukkan Kod Promo
+                        </span>
+                        <i class="fa-solid fa-chevron-right text-slate-500 text-sm"></i>
+                    </button>
+                    
+                    <button onclick="copyShareLink()" class="w-full glass-card hover:bg-slate-700/60 p-4 rounded-2xl flex items-center justify-between transition-all active:scale-[0.98]">
+                        <span class="font-bold text-slate-200 flex items-center gap-3">
+                            <div class="bg-green-500/20 w-10 h-10 rounded-full flex items-center justify-center text-green-400">
+                                <i class="fa-solid fa-share-nodes"></i>
+                            </div>
+                            Kongsi Aplikasi
+                        </span>
+                        <i class="fa-solid fa-chevron-right text-slate-500 text-sm"></i>
+                    </button>
+                    
+                    <button onclick="openContactModal()" class="w-full glass-card hover:bg-slate-700/60 p-4 rounded-2xl flex items-center justify-between transition-all active:scale-[0.98]">
+                        <span class="font-bold text-slate-200 flex items-center gap-3">
+                            <div class="bg-purple-500/20 w-10 h-10 rounded-full flex items-center justify-center text-purple-400">
+                                <i class="fa-solid fa-headset"></i>
+                            </div>
+                            Hubungi Kami
+                        </span>
+                        <i class="fa-solid fa-chevron-right text-slate-500 text-sm"></i>
+                    </button>
+                </div>
+                <p class="text-center text-slate-600 text-xs mt-8 font-medium">Versi Aplikasi: 2.0.0 (Pro)</p>
+            </div>
+        </main>
+
+        <!-- Navigasi Bawah -->
+        <nav class="h-20 glass-card border-t border-slate-700/50 absolute bottom-0 w-full z-20 flex px-2 pb-2">
+            <button class="nav-item active flex-1 flex flex-col items-center justify-center gap-1" data-target="earn" onclick="switchTab('earn')">
+                <i class="fa-solid fa-star text-xl mb-1"></i>
+            </button>
+            <button class="nav-item flex-1 flex flex-col items-center justify-center gap-1" data-target="followers" onclick="switchTab('followers')">
+                <i class="fa-solid fa-user-plus text-xl mb-1"></i>
+            </button>
+            <button class="nav-item flex-1 flex flex-col items-center justify-center gap-1" data-target="likes" onclick="switchTab('likes')">
+                <i class="fa-solid fa-heart-circle-plus text-xl mb-1"></i>
+            </button>
+            <button class="nav-item flex-1 flex flex-col items-center justify-center gap-1" data-target="store" onclick="switchTab('store')">
+                <i class="fa-solid fa-shop text-xl mb-1"></i>
+            </button>
+            <button class="nav-item flex-1 flex flex-col items-center justify-center gap-1" data-target="settings" onclick="switchTab('settings')">
+                <i class="fa-solid fa-gear text-xl mb-1"></i>
+            </button>
+        </nav>
+
+        <!-- Sistem Modal Kustom (Popup) -->
+        <div id="custom-modal" class="absolute inset-0 modal-overlay z-50 hidden flex-col items-center justify-center p-6">
+            <div class="bg-[#1e293b] w-full max-w-[320px] rounded-3xl p-6 shadow-2xl border border-slate-700/50 transform transition-all scale-95 opacity-0" id="modal-content-box">
+                <div class="flex justify-center mb-4" id="modal-icon">
+                    <!-- Ikon disuntik di sini -->
+                </div>
+                <h3 id="modal-title" class="text-xl font-bold text-center text-white mb-2">Tajuk Modal</h3>
+                <p id="modal-desc" class="text-slate-400 text-center text-sm mb-6 leading-relaxed">Penerangan ringkas di sini.</p>
+                <div id="modal-body" class="mb-6 w-full hidden">
+                    <!-- Input atau elemen tambahan -->
+                </div>
+                <div id="modal-actions" class="flex gap-3">
+                    <!-- Butang disuntik di sini -->
+                </div>
+            </div>
+        </div>
+
+        <!-- Bekas Toast (Notifikasi Ringkas) -->
+        <div id="toast-container" class="absolute top-20 left-0 w-full px-4 pointer-events-none flex flex-col gap-2 z-50"></div>
+    </div>
+
+    <script>
+        // --- Pengurusan Status (State) ---
+        let currentStars = 65;
+        let followersCount = 231;
+        const username = "@pembangun_kreatif";
+        const avatarUrl = "https://ui-avatars.com/api/?name=PK&background=a855f7&color=fff&size=128&bold=true";
+        let freeStarsClaimed = false;
+
+        // --- Data Mockup ---
+        const dummyProfiles = [
+            { name: "@seni_digital", title: "Pelukis Digital", img: "https://picsum.photos/seed/p1/400/500" },
+            { name: "@gamer_tegar", title: "Penstrim Harian", img: "https://picsum.photos/seed/p2/400/500" },
+            { name: "@muzik_kita", title: "Lofi & Santai", img: "https://picsum.photos/seed/p3/400/500" },
+            { name: "@masak_masak", title: "Resepi Mudah", img: "https://picsum.photos/seed/p4/400/500" }
+        ];
+        let currentProfileIndex = 0;
+
+        const followerPackages = [
+            { amount: 5, cost: 50 },
+            { amount: 10, cost: 100 },
+            { amount: 25, cost: 250 },
+            { amount: 50, cost: 500 },
+            { amount: 100, cost: 1000 },
+        ];
+
+        const storePackages = [
+            { discount: "15%", stars: 250, price: "RM 9.90", hot: false },
+            { discount: "25%", stars: 1000, price: "RM 29.90", hot: true },
+            { discount: "40%", stars: 5000, price: "RM 99.90", hot: false },
+            { discount: "50%", stars: 15000, price: "RM 249.90", hot: false }
+        ];
+
+        const videoGridData = Array.from({length: 12}).map((_, i) => ({
+            likes: Math.floor(Math.random() * 200) + 10,
+            views: Math.floor(Math.random() * 5000) + 100,
+            img: `https://picsum.photos/seed/v${i+20}/200/300`
+        }));
+
+        // --- Fungsi Antaramuka (UI) Utama ---
+        function updateHeader() {
+            document.getElementById('header-stars').innerText = currentStars.toLocaleString();
+            
+            // Animasi pop-out bila bintang bertambah
+            const starEl = document.getElementById('header-stars');
+            starEl.style.transform = 'scale(1.3)';
+            starEl.style.color = '#fde047';
+            setTimeout(() => {
+                starEl.style.transform = 'scale(1)';
+                starEl.style.color = 'white';
+            }, 300);
+        }
+
+        function showToast(message, type = 'success') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            
+            const icon = type === 'success' ? '<i class="fa-solid fa-circle-check text-green-400"></i>' 
+                       : type === 'error' ? '<i class="fa-solid fa-circle-exclamation text-red-400"></i>'
+                       : '<i class="fa-solid fa-bell text-blue-400"></i>';
+
+            toast.className = `toast-enter glass-card text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700/50 text-sm font-medium flex items-center gap-3`;
+            toast.innerHTML = `${icon} <span>${message}</span>`;
+            
+            container.appendChild(toast);
+            
+            setTimeout(() => {
+                toast.style.opacity = '0';
+                toast.style.transform = 'translateY(-20px)';
+                toast.style.transition = 'all 0.4s ease-in';
+                setTimeout(() => toast.remove(), 400);
+            }, 2500);
+        }
+
+        // --- Sistem Modal ---
+        function showModal({ icon, title, desc, bodyHTML = '', actionsHTML }) {
+            const modal = document.getElementById('custom-modal');
+            const box = document.getElementById('modal-content-box');
+            
+            document.getElementById('modal-icon').innerHTML = icon;
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-desc').innerText = desc;
+            
+            const bodyEl = document.getElementById('modal-body');
+            if (bodyHTML) {
+                bodyEl.innerHTML = bodyHTML;
+                bodyEl.classList.remove('hidden');
+            } else {
+                bodyEl.classList.add('hidden');
+                bodyEl.innerHTML = '';
+            }
+            
+            document.getElementById('modal-actions').innerHTML = actionsHTML;
+            
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+            
+            // Animasi masuk
+            setTimeout(() => {
+                box.style.transform = 'scale(1)';
+                box.style.opacity = '1';
+            }, 10);
+        }
+
+        function closeModal() {
+            const modal = document.getElementById('custom-modal');
+            const box = document.getElementById('modal-content-box');
+            
+            box.style.transform = 'scale(0.95)';
+            box.style.opacity = '0';
+            
+            setTimeout(() => {
+                modal.classList.add('hidden');
+                modal.classList.remove('flex');
+            }, 200);
+        }
+
+        // --- Logik Perniagaan Aplikasi ---
+        function getProfileHeaderHTML() {
+            return `
+                <div class="flex flex-col items-center mb-8 bg-gradient-to-b from-slate-800/50 to-transparent p-6 rounded-3xl border border-slate-700/30">
+                    <div class="relative">
+                        <img src="${avatarUrl}" alt="Avatar" class="w-24 h-24 rounded-full border-4 border-slate-800 shadow-xl object-cover mb-3">
+                        <div class="absolute bottom-2 right-0 bg-blue-500 rounded-full w-7 h-7 flex items-center justify-center border-2 border-slate-800 text-xs">
+                            <i class="fa-solid fa-check text-white"></i>
+                        </div>
+                    </div>
+                    <p class="font-bold text-lg text-white mb-6 tracking-wide">${username}</p>
+                    <div class="flex w-full justify-center gap-8 text-center bg-slate-800/40 py-3 rounded-2xl">
+                        <div class="px-4">
+                            <p class="text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 to-yellow-500">${currentStars}</p>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Bintang</p>
+                        </div>
+                        <div class="w-px bg-slate-700"></div>
+                        <div class="px-4">
+                            <p class="text-2xl font-black text-white" id="stat-followers">${followersCount}</p>
+                            <p class="text-xs font-semibold text-slate-400 uppercase tracking-wider mt-1">Pengikut</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function loadEarnCard() {
+            const profile = dummyProfiles[currentProfileIndex];
+            const card = document.getElementById('earn-card');
+            
+            // Menggunakan gambar sebenar untuk efek moden
+            card.innerHTML = `
+                <img src="${profile.img}" class="absolute inset-0 w-full h-full object-cover" alt="Profile background">
+                <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent"></div>
+                <div class="absolute bottom-0 left-0 w-full p-6 text-center">
+                    <h2 class="text-2xl font-bold text-white mb-1 shadow-black drop-shadow-md">${profile.name}</h2>
+                    <p class="text-purple-300 font-medium text-sm bg-black/30 backdrop-blur-sm inline-block px-3 py-1 rounded-full">${profile.title}</p>
+                </div>
+            `;
+        }
+
+        function skipProfile() {
+            currentProfileIndex = (currentProfileIndex + 1) % dummyProfiles.length;
+            loadEarnCard();
+        }
+
+        function earnStars(amount) {
+            currentStars += amount;
+            updateHeader();
+            showToast(`Berjaya mengumpul ${amount} bintang! ⭐`, 'success');
+            skipProfile();
+            updateAllHeaders();
+        }
+
+        function updateAllHeaders() {
+            const header1 = document.getElementById('followers-profile-header');
+            const header2 = document.getElementById('settings-profile-header');
+            if(header1.innerHTML !== '') header1.innerHTML = getProfileHeaderHTML();
+            if(header2.innerHTML !== '') header2.innerHTML = getProfileHeaderHTML();
+        }
+
+        function renderFollowers() {
+            document.getElementById('followers-profile-header').innerHTML = getProfileHeaderHTML();
+            const list = document.getElementById('followers-list');
+            
+            list.innerHTML = followerPackages.map(pkg => `
+                <div class="glass-card hover:bg-slate-700/40 transition-colors rounded-2xl p-4 flex justify-between items-center">
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
+                            <i class="fa-solid fa-users text-blue-400 text-lg"></i>
+                        </div>
+                        <div>
+                            <div class="text-white font-bold text-lg">+${pkg.amount} Pengikut</div>
+                            <div class="text-xs text-slate-400">Pantas & Selamat</div>
+                        </div>
+                    </div>
+                    <button onclick="buyFollowers(${pkg.cost}, ${pkg.amount})" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-2.5 px-5 rounded-xl border border-slate-600 transition-all active:scale-95 flex items-center gap-1.5 shadow-md">
+                        ${pkg.cost} <i class="fa-solid fa-star text-yellow-400 text-xs"></i>
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function buyFollowers(cost, amount) {
+            if (currentStars >= cost) {
+                currentStars -= cost;
+                followersCount += amount;
+                updateHeader();
+                updateAllHeaders();
+                showToast(`Tahniah! ${amount} pengikut sedang diproses.`, 'success');
+            } else {
+                showToast("Bintang tidak mencukupi. Teruskan kumpul!", 'error');
+            }
+        }
+
+        function renderLikesGrid() {
+            const grid = document.getElementById('video-grid');
+            grid.innerHTML = videoGridData.map((vid, idx) => `
+                <div class="rounded-xl overflow-hidden aspect-[9/16] relative cursor-pointer active:scale-95 transition-transform shadow-lg group border border-slate-700/50" onclick="openBuyLikesModal(${vid.likes}, ${idx})">
+                    <img src="${vid.img}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" alt="Video">
+                    <div class="absolute inset-0 bg-gradient-to-t from-slate-900/90 via-transparent to-transparent"></div>
+                    <div class="absolute bottom-2 left-2 flex items-center gap-1 text-xs font-semibold text-white">
+                        <i class="fa-solid fa-play text-white/70"></i> ${vid.views}
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function openBuyLikesModal(currentLikes, videoIdx) {
+            showModal({
+                icon: '<div class="w-16 h-16 rounded-full bg-pink-500/20 flex items-center justify-center"><i class="fa-solid fa-heart text-3xl text-pink-500"></i></div>',
+                title: 'Tingkatkan Likes',
+                desc: `Video ini mempunyai ${currentLikes} likes. Beli 50 Likes tambahan dengan 100 Bintang?`,
+                actionsHTML: `
+                    <button onclick="closeModal()" class="flex-1 py-3 rounded-xl font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
+                    <button onclick="confirmBuyLikes()" class="flex-1 py-3 rounded-xl font-bold text-white bg-gradient-to-r from-pink-500 to-rose-500 hover:opacity-90 transition-opacity shadow-lg shadow-pink-500/30">Guna 100 <i class="fa-solid fa-star text-xs"></i></button>
+                `
+            });
+        }
+
+        function confirmBuyLikes() {
+            closeModal();
+            if (currentStars >= 100) {
+                currentStars -= 100;
+                updateHeader();
+                updateAllHeaders();
+                showToast("Selesai! Likes akan masuk sebentar lagi.", "success");
+            } else {
+                showToast("Bintang tidak mencukupi untuk pesanan ini.", "error");
+            }
+        }
+
+        function renderStore() {
+            const list = document.getElementById('store-list');
+            list.innerHTML = storePackages.map(pkg => `
+                <div class="glass-card hover:border-purple-500/50 transition-colors rounded-2xl p-4 flex justify-between items-center relative overflow-hidden">
+                    ${pkg.hot ? '<div class="absolute -right-8 top-3 bg-red-500 text-white text-[10px] font-bold px-8 py-1 rotate-45 shadow-lg">HOT</div>' : ''}
+                    
+                    <div class="flex items-center gap-4">
+                        <div class="w-12 h-12 rounded-full ${pkg.hot ? 'bg-yellow-500/20 border-yellow-500/30' : 'bg-purple-500/10 border-purple-500/20'} flex items-center justify-center border">
+                            <i class="fa-solid fa-star text-xl ${pkg.hot ? 'text-yellow-400' : 'text-purple-400'}"></i>
+                        </div>
+                        <div class="flex flex-col">
+                            <span class="text-xs font-bold text-emerald-400 mb-0.5">${pkg.discount} DISKAUN</span>
+                            <div class="text-white font-bold text-lg flex items-center gap-1">
+                                ${pkg.stars.toLocaleString()} <span class="text-sm text-slate-400 font-normal">Bintang</span>
+                            </div>
+                        </div>
+                    </div>
+                    <button onclick="simulatePurchase(${pkg.stars}, '${pkg.price}')" class="bg-gradient-to-r from-purple-600 to-indigo-600 hover:opacity-90 text-white font-bold py-2.5 px-5 rounded-xl transition-all active:scale-95 shadow-lg shadow-purple-500/20 text-sm">
+                        ${pkg.price}
+                    </button>
+                </div>
+            `).join('');
+        }
+
+        function simulatePurchase(stars, price) {
+            showModal({
+                icon: '<div class="w-16 h-16 rounded-full bg-green-500/20 flex items-center justify-center"><i class="fa-solid fa-shield-check text-3xl text-green-500"></i></div>',
+                title: 'Pengesahan Pembelian',
+                desc: `Meneruskan pembayaran Google Play untuk ${price}?`,
+                actionsHTML: `
+                    <button onclick="closeModal()" class="flex-1 py-3 rounded-xl font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
+                    <button onclick="successPurchase(${stars})" class="flex-1 py-3 rounded-xl font-bold text-white bg-green-600 hover:bg-green-500 transition-colors">Beli</button>
+                `
+            });
+        }
+
+        function successPurchase(stars) {
+            closeModal();
+            currentStars += stars;
+            updateHeader();
+            updateAllHeaders();
+            showToast(`Pembelian berjaya! +${stars} Bintang.`, "success");
+        }
+
+        // --- Fungsi Butang Tetapan ---
+        function claimFreeStars() {
+            if (freeStarsClaimed) {
+                showToast("Anda telah menebus bintang percuma hari ini.", "error");
+                return;
+            }
+            
+            freeStarsClaimed = true;
+            currentStars += 100;
+            updateHeader();
+            updateAllHeaders();
+            
+            const btn = document.getElementById('btn-free-stars');
+            btn.classList.add('opacity-50', 'pointer-events-none');
+            btn.querySelector('.text-yellow-400').innerHTML = '<i class="fa-solid fa-check"></i> Ditebus';
+            
+            showToast("Berjaya menebus 100 bintang percuma!", "success");
+        }
+
+        function openPromoModal() {
+            showModal({
+                icon: '<div class="w-16 h-16 rounded-full bg-blue-500/20 flex items-center justify-center"><i class="fa-solid fa-ticket text-3xl text-blue-500"></i></div>',
+                title: 'Tebus Kod Promo',
+                desc: 'Masukkan kod promo sah anda di bawah. (Cuba kod: MOOTS2026)',
+                bodyHTML: `<input type="text" id="promo-input" placeholder="Masukkan Kod" class="w-full bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white font-bold text-center focus:outline-none focus:border-purple-500 uppercase">`,
+                actionsHTML: `
+                    <button onclick="closeModal()" class="flex-1 py-3 rounded-xl font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Batal</button>
+                    <button onclick="verifyPromo()" class="flex-1 py-3 rounded-xl font-bold text-white bg-blue-600 hover:bg-blue-500 transition-colors">Tebus</button>
+                `
+            });
+        }
+
+        function verifyPromo() {
+            const input = document.getElementById('promo-input').value.trim().toUpperCase();
+            if (input === 'MOOTS2026') {
+                closeModal();
+                currentStars += 500;
+                updateHeader();
+                updateAllHeaders();
+                showToast("Kod sah! 500 Bintang ditambah.", "success");
+            } else {
+                document.getElementById('promo-input').classList.add('border-red-500');
+                showToast("Kod promo tidak sah atau telah tamat tempoh.", "error");
+            }
+        }
+
+        function copyShareLink() {
+            const temp = document.createElement("textarea");
+            temp.value = "https://moots.app/invite/PK100";
+            document.body.appendChild(temp);
+            temp.select();
+            document.execCommand("copy");
+            document.body.removeChild(temp);
+            showToast("Pautan jemputan disalin! Kongsi bersama rakan.", "info");
+        }
+
+        function openContactModal() {
+            showModal({
+                icon: '<div class="w-16 h-16 rounded-full bg-purple-500/20 flex items-center justify-center"><i class="fa-solid fa-envelope text-3xl text-purple-500"></i></div>',
+                title: 'Perlukan Bantuan?',
+                desc: 'Pasukan sokongan kami sedia membantu anda 24/7.',
+                actionsHTML: `
+                    <button onclick="closeModal()" class="flex-1 py-3 rounded-xl font-bold text-slate-300 bg-slate-800 hover:bg-slate-700 transition-colors">Tutup</button>
+                    <button onclick="closeModal(); showToast('Membuka aplikasi e-mel...', 'info')" class="flex-1 py-3 rounded-xl font-bold text-white bg-purple-600 hover:bg-purple-500 transition-colors">Emel Sokongan</button>
+                `
+            });
+        }
+
+        // --- Logik Navigasi Tab ---
+        function switchTab(tabId) {
+            // Kemaskini butang navigasi aktif
+            document.querySelectorAll('.nav-item').forEach(el => el.classList.remove('active'));
+            document.querySelector(`.nav-item[data-target="${tabId}"]`).classList.add('active');
+
+            // Sembunyikan semua pandangan
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+
+            // Tunjukkan pandangan yang dipilih
+            const activeView = document.getElementById(`view-${tabId}`);
+            activeView.classList.remove('hidden');
+
+            // Set tajuk halaman
+            const titleMap = {
+                'earn': 'Kumpul Bintang',
+                'followers': 'Kempen Profil',
+                'likes': 'Tingkatkan Likes',
+                'store': 'Kedai Premium',
+                'settings': 'Tetapan Akaun'
+            };
+            
+            document.getElementById('header-title').innerText = titleMap[tabId];
+            
+            // Tatal ke atas bila tukar tab
+            document.getElementById('main-content').scrollTop = 0;
+            
+            // Muat semula header profil jika masuk tab berkaitan
+            if(tabId === 'followers' || tabId === 'settings') {
+                updateAllHeaders();
+            }
+        }
+
+        // --- Inisialisasi Aplikasi ---
+        window.onload = () => {
+            updateHeader();
+            loadEarnCard();
+            renderFollowers();
+            renderLikesGrid();
+            renderStore();
+            
+            // Mula pada tab pertama
+            switchTab('earn');
+            
+            // Tambahkan profil tetapan
+            document.getElementById('settings-profile-header').innerHTML = getProfileHeaderHTML();
+        };
+    </script>
+</body>
+</html>
