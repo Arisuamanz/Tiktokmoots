@@ -59,6 +59,7 @@
 
     .login-view {
       height: 100%;
+      box-sizing: border-box;
       padding: 30px 22px;
       display: flex;
       flex-direction: column;
@@ -67,7 +68,6 @@
       gap: 18px;
       overflow-y: auto;
       -webkit-overflow-scrolling: touch;
-      box-sizing: border-box;
     }
 
     .login-card {
@@ -515,7 +515,6 @@
     .bottom-nav {
       flex-shrink: 0;
       width: 100%;
-      max-width: 440px;
       padding: 10px 10px calc(12px + env(safe-area-inset-bottom));
       border-top: 1px solid rgba(255, 255, 255, 0.09);
       background: rgba(12, 18, 33, 0.94);
@@ -552,48 +551,8 @@
       border: 1px solid rgba(149, 186, 255, 0.26);
     }
 
-    .tab-content {
-      display: none;
-    }
-
-    .tab-content.active {
-      display: block;
-    }
-
-    /* ── Likes tab add-video card ── */
-    .likes-add-card {
-      padding: 16px;
-      margin-bottom: 14px;
-      display: flex;
-      flex-direction: column;
-      box-sizing: border-box;
-      overflow: hidden;
-    }
-
-    .likes-input-wrap {
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-      margin-bottom: 10px;
-      overflow: hidden;
-    }
-
-    .likes-input-wrap input[type="text"] {
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-      box-sizing: border-box;
-      font-size: 13px;
-      padding: 10px 0;
-    }
-
-    .likes-open-btn {
-      width: 100%;
-      max-width: 100%;
-      box-sizing: border-box;
-      font-size: 14px;
-      padding: 12px 16px;
-    }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
     .video-link {
       margin: 6px 0 0;
@@ -608,7 +567,7 @@
       position: fixed;
       left: 50%;
       transform: translateX(-50%) translateY(120%);
-      bottom: calc(76px + env(safe-area-inset-bottom));
+      bottom: calc(82px + env(safe-area-inset-bottom));
       max-width: 390px;
       width: calc(100% - 26px);
       border-radius: 14px;
@@ -648,7 +607,6 @@
       .stats strong { font-size: 22px; }
     }
   </style>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body>
   <div id="loginView" class="login-view">
@@ -663,6 +621,7 @@
           <input id="usernameInput" type="text" placeholder="yourusername" autocomplete="off" required />
         </div>
         <p class="hint">Use your exact TikTok username, not your display name.</p>
+        <p class="hint">Your TikTok account must be PUBLIC (not private). Private accounts cannot fetch followers/following or use this app.</p>
         <button id="loginBtn" class="btn btn-primary" type="submit">Continue</button>
       </form>
     </div>
@@ -727,21 +686,20 @@
       </section>
 
       <section id="likesTab" class="tab-content">
-        <p class="section-title">Profile Videos</p>
-        <div class="likes-add-card glass-card">
-          <p class="small" style="white-space:normal; margin:0 0 10px;">
-            Tampal pautan video TikTok di bawah untuk buka terus dalam aplikasi TikTok.
-          </p>
-          <div class="input-wrap likes-input-wrap">
-            <input id="manualVideoUrl" type="text"
-                   placeholder="https://www.tiktok.com/@user/video/123..."
-                   autocomplete="off" />
+        <p class="section-title">My Profile Videos</p>
+        <div class="glass-card" style="margin-bottom:12px; padding:14px; display:flex; flex-direction:column; gap:10px; overflow:hidden; box-sizing:border-box;">
+          <p class="small" style="margin:0; white-space:normal;">Paste a TikTok video link to save it to your profile.</p>
+          <div class="input-wrap" style="margin-bottom:0; overflow:hidden; box-sizing:border-box;">
+            <input id="manualVideoUrl" type="text" placeholder="https://www.tiktok.com/@user/video/123..." autocomplete="off" style="min-width:0; font-size:13px;" />
           </div>
-          <button id="openManualVideoBtn" class="btn btn-primary likes-open-btn" type="button">
-            &#9654; Buka Video
-          </button>
+          <button id="openManualVideoBtn" class="btn btn-primary" type="button" style="box-sizing:border-box; font-size:14px;">💾 Save Video</button>
         </div>
         <div id="videoFeed"></div>
+        <p class="section-title" style="margin-top:18px;">Video Marketplace</p>
+        <div class="glass-card" style="margin-bottom:12px; padding:12px; box-sizing:border-box;">
+          <p class="small" style="margin:0;">Watch &amp; like videos to earn <strong>+1 ⭐</strong> per video. Publish your video here for <strong>5 ⭐/day</strong> to get real views.</p>
+        </div>
+        <div id="marketplaceFeed"></div>
       </section>
 
       <section id="shopTab" class="tab-content">
@@ -750,27 +708,29 @@
       </section>
 
       <section id="settingsTab" class="tab-content">
-        <div class="list-card">
-          <div>
-            <strong>Free Daily Bonus</strong>
-            <p class="small" style="margin:4px 0 0;">Get +1 star once per day</p>
+        <div class="glass-card profile-card">
+          <div class="profile-row">
+            <img id="settingsAvatar" class="avatar" alt="My TikTok profile" />
+            <div>
+              <p id="settingsHandle" class="handle">@username</p>
+              <p class="small">Account &amp; rewards overview</p>
+            </div>
           </div>
-          <button id="freeBonusBtn" class="btn-buy enabled" type="button">Claim +1</button>
         </div>
         <div class="list-card">
           <div>
-            <strong>Share Game Gift</strong>
-            <p class="small" style="margin:4px 0 0;">Share the app and claim +25 stars once per day</p>
+            <strong>Daily Bonus</strong>
+            <p class="small" style="margin:4px 0 0;">Claim +5 stars — once per day</p>
           </div>
-          <button id="shareBonusBtn" class="btn-buy enabled" type="button">Share +25</button>
+          <button id="freeBonusBtn" class="btn-buy enabled" type="button">Claim +5</button>
         </div>
         <div class="list-card">
           <div>
-            <strong>Watch Ads Reward</strong>
-            <p class="small" style="margin:4px 0 0;">Get +25 stars per ad (max 4 claims per day)</p>
-            <p id="adRemainLabel" class="reward-note">Ad rewards left today: 4/4</p>
+            <strong>Watch Ad Reward</strong>
+            <p class="small" style="margin:4px 0 0;">Watch an ad to earn +25 stars (max 4 per day)</p>
+            <p id="adRemainLabel" class="reward-note">Ad rewards left: 4/4</p>
           </div>
-          <button id="adBonusBtn" class="btn-buy enabled" type="button">Watch +25</button>
+          <button id="adBonusBtn" class="btn-buy enabled" type="button">▶ Watch Ad +25⭐</button>
         </div>
         <div class="list-card">
           <div>
@@ -797,201 +757,6 @@
     (function () {
       var APP_ID = "tiktok-moots-v2";
 
-      var SUPABASE_URL = "https://jldrkztzqdgxqafgtwfz.supabase.co";
-      var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZHJrenR6cWRneHFhZmd0d2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNjMwOTksImV4cCI6MjA5MDYzOTA5OX0.eCB2MTyZPdVaqD4vDwwqRxXFRNoHDhAE9w2qmDbERA8";
-
-      var sb = (typeof supabase !== "undefined" && supabase.createClient)
-        ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
-        : null;
-
-      function emitAndroid(name, payload) {
-        try {
-          if (typeof window[name] === "function") {
-            window[name](JSON.stringify(payload));
-          }
-        } catch (_e) {}
-      }
-
-      function adRemainingFromUser(u) {
-        if (!u) return 4;
-        var today = new Date().toISOString().slice(0, 10);
-        if (u.ad_reward_date === today) {
-          return Math.max(0, 4 - (u.ad_reward_count || 0));
-        }
-        return 4;
-      }
-
-      function normHandle(raw) {
-        return (raw || "").toLowerCase().replace(/\s+/g, "").replace(/^@+/, "").trim();
-      }
-
-      if (!window.AndroidDB || typeof window.AndroidDB.syncUser !== "function") {
-        window.AndroidDB = {
-          syncUser: function (username) {
-            if (!sb) return;
-            var u = normHandle(username);
-            if (!u) return;
-            sb.from("users")
-              .upsert({ username: u }, { onConflict: "username", ignoreDuplicates: true })
-              .then(function () {});
-          },
-
-          getUserProfile: function (username) {
-            if (!sb) { emitAndroid("onAndroidError", "Supabase not loaded"); return; }
-            var u = normHandle(username);
-            sb.from("users")
-              .upsert({ username: u }, { onConflict: "username", ignoreDuplicates: true })
-              .then(function () {
-                return sb.from("users").select("*").eq("username", u).maybeSingle();
-              })
-              .then(function (res) {
-                var d = res && res.data;
-                if (!d) { emitAndroid("onAndroidUserProfile", { ok: false }); return; }
-                emitAndroid("onAndroidUserProfile", {
-                  ok: true,
-                  stars: d.stars,
-                  followers: d.followers,
-                  ad_remaining: adRemainingFromUser(d),
-                  tiktok_followers: null,
-                  tiktok_following: null
-                });
-              })
-              .catch(function (e) {
-                emitAndroid("onAndroidError", String((e && e.message) || e));
-              });
-          },
-
-          createFollowerOrder: function (username, amount, cost) {
-            if (!sb) return;
-            sb.rpc("create_follower_order", {
-              p_username: normHandle(username),
-              p_followers_requested: Number(amount),
-              p_stars_cost: Number(cost)
-            }).then(function (res) {
-              if (res.error) {
-                emitAndroid("onAndroidOrderCreated", { ok: false, message: res.error.message });
-              } else {
-                emitAndroid("onAndroidOrderCreated", res.data || { ok: false });
-              }
-            });
-          },
-
-          fetchEarnTarget: function (username) {
-            if (!sb) return;
-            sb.rpc("get_next_follow_target", {
-              p_actor_username: normHandle(username)
-            }).then(function (res) {
-              emitAndroid("onAndroidEarnTarget", (res && res.data) || { ok: false });
-            });
-          },
-
-          fetchEarnTargetList: function (username, sort, limit) {
-            if (!sb) return;
-            sb.rpc("list_follow_targets", {
-              p_actor_username: normHandle(username),
-              p_sort: sort || "old",
-              p_limit: Number(limit) || 30
-            }).then(function (res) {
-              emitAndroid("onAndroidEarnTargetList", (res && res.data) || { ok: false, targets: [] });
-            });
-          },
-
-          completeFollow: function (actor, orderId, target, stars) {
-            if (!sb) return;
-            sb.rpc("complete_follow_task", {
-              p_actor_username: normHandle(actor),
-              p_order_id: orderId,
-              p_target_username: normHandle(target),
-              p_stars_awarded: Number(stars) || 5
-            }).then(function (res) {
-              if (res.error) {
-                emitAndroid("onAndroidFollowResult", { ok: false, message: res.error.message });
-              } else {
-                emitAndroid("onAndroidFollowResult", res.data || { ok: false });
-              }
-            });
-          },
-
-          fetchProfileVideos: function (username) {
-            if (!sb) return;
-            sb.rpc("get_profile_videos", {
-              p_username: normHandle(username)
-            }).then(function (res) {
-              emitAndroid("onAndroidProfileVideos", (res && res.data) || { ok: false, videos: [] });
-            });
-          },
-
-          claimBonus: function (username, type) {
-            if (!sb) return;
-            sb.rpc("claim_bonus", {
-              p_username: normHandle(username),
-              p_bonus_type: String(type || "")
-            }).then(function (res) {
-              if (res.error) {
-                emitAndroid("onAndroidBonusResult", { ok: false, message: res.error.message });
-              } else {
-                emitAndroid("onAndroidBonusResult", res.data || { ok: false });
-              }
-            });
-          }
-        };
-      }
-
-      function openExternalAnchor(href) {
-        var a = document.createElement("a");
-        a.href = href;
-        a.target = "_blank";
-        a.rel = "noopener external";
-        a.style.display = "none";
-        document.body.appendChild(a);
-        try { a.click(); } catch (_e) {}
-        setTimeout(function () {
-          if (a.parentNode) a.parentNode.removeChild(a);
-        }, 0);
-      }
-
-      function openTikTokUrlSmart(url) {
-        if (!url) return;
-        if (window.Android && typeof window.Android.openTikTokUrl === "function") {
-          try { window.Android.openTikTokUrl(url); return; } catch (_e) {}
-        }
-        if (window.AndroidApp && typeof window.AndroidApp.openExternal === "function") {
-          try { window.AndroidApp.openExternal(url); return; } catch (_e) {}
-        }
-        var ua = navigator.userAgent || "";
-        if (/Android/i.test(ua)) {
-          var noProtocol = String(url).replace(/^https?:\/\//, "");
-          var intentUrl = "intent://" + noProtocol +
-            "#Intent;scheme=https;action=android.intent.action.VIEW;" +
-            "package=com.zhiliaoapp.musically;" +
-            "S.browser_fallback_url=" + encodeURIComponent(url) + ";end";
-          openExternalAnchor(intentUrl);
-          return;
-        }
-        if (/iPhone|iPad|iPod/i.test(ua)) {
-          openExternalAnchor(url);
-          return;
-        }
-        window.open(url, "_blank", "noopener");
-      }
-
-      function fetchTikTokStats(username) {
-        var u = (username || "").toLowerCase().replace(/\s+/g, "").replace(/^@+/, "").trim();
-        if (!u) return;
-        var apiUrl = "https://www.tikwm.com/api/user/info?unique_id=" + encodeURIComponent(u);
-        fetch(apiUrl, { method: "GET", headers: { "Accept": "application/json" } })
-          .then(function (r) { return r.json(); })
-          .then(function (json) {
-            if (!json || json.code !== 0 || !json.data || !json.data.stats) return;
-            var followers = Number(json.data.stats.followerCount);
-            var following = Number(json.data.stats.followingCount);
-            if (isFinite(followers)) state.tiktokFollowers = followers;
-            if (isFinite(following)) state.tiktokFollowing = following;
-            updateTikTokStats();
-          })
-          .catch(function () {});
-      }
-
       var FOLLOWER_PACKAGES = [
         { id: 1, amount: 5, cost: 50 },
         { id: 2, amount: 10, cost: 100 },
@@ -1010,6 +775,8 @@
         { id: 6, stars: 10000, originalPrice: 224.99 }
       ];
 
+      var STORE_URL = "https://play.google.com/store/apps/details?id=com.Kitricky.MyWaifuGirlfriend";
+
       var state = {
         isLoggedIn: localStorage.getItem(APP_ID + "_logged") === "true",
         username: localStorage.getItem(APP_ID + "_user") || "",
@@ -1019,9 +786,15 @@
         targetTask: null,
         followSession: null,
         videos: [],
+        marketplaceVideos: [],
         targetList: [],
         sortOrder: localStorage.getItem(APP_ID + "_sort") || "old",
         adRemaining: 4,
+        pendingAdReward: false,
+        claimedFreeDaily: false,
+        pendingBonusType: null,
+        pendingVideoWatch: null,
+        pendingFollowCheck: false,
         tiktokFollowers: null,
         tiktokFollowing: null
       };
@@ -1046,7 +819,7 @@
       }
 
       function pinBottomNav() {
-        /* bottom nav is now in-flow flex item — nothing to pin */
+        /* bottom-nav is a flex-shrink:0 item — always stays at bottom */
       }
 
       function canUseAndroidDb() {
@@ -1138,15 +911,41 @@
       }
 
       function updateProfile() {
-        document.getElementById("myHandle").textContent = "@" + (state.username || "username");
-        loadAvatar(document.getElementById("myAvatar"), state.username);
+        var handleText = "@" + (state.username || "username");
+        var myHandleEl = document.getElementById("myHandle");
+        var myAvatarEl = document.getElementById("myAvatar");
+        if (myHandleEl) myHandleEl.textContent = handleText;
+        if (myAvatarEl) loadAvatar(myAvatarEl, state.username);
+
+        var settingsHandleEl = document.getElementById("settingsHandle");
+        var settingsAvatarEl = document.getElementById("settingsAvatar");
+        if (settingsHandleEl) settingsHandleEl.textContent = handleText;
+        if (settingsAvatarEl) loadAvatar(settingsAvatarEl, state.username);
       }
 
       function updateRewardInfo() {
         var adRemain = Number(state.adRemaining || 0);
         var adLabel = document.getElementById("adRemainLabel");
-        if (!adLabel) return;
-        adLabel.textContent = "Ad rewards left today: " + adRemain + "/4";
+        if (adLabel) {
+          adLabel.textContent = "Ad rewards left today: " + adRemain + "/4";
+        }
+
+        var freeBtn = document.getElementById("freeBonusBtn");
+        if (freeBtn) {
+          var freeClaimed = !!state.claimedFreeDaily;
+          freeBtn.disabled = freeClaimed;
+          freeBtn.classList.toggle("disabled", freeClaimed);
+        }
+
+
+        var adBtn = document.getElementById("adBonusBtn");
+        if (adBtn) {
+          var noAdsLeft = adRemain <= 0 || state.pendingAdReward;
+          adBtn.disabled = noAdsLeft;
+          adBtn.classList.toggle("disabled", noAdsLeft);
+          adBtn.classList.toggle("enabled", !noAdsLeft);
+          adBtn.textContent = state.pendingAdReward ? "⏳ Loading Ad..." : "▶ Watch Ad +25⭐";
+        }
       }
 
       function formatCount(v) {
@@ -1268,6 +1067,14 @@
         });
       }
 
+      function openVideoUrl(url) {
+        if (!url) { showToast("Video URL missing.", "warn", 2000); return; }
+        if (window.Android && typeof window.Android.openTikTokUrl === "function") {
+          try { window.Android.openTikTokUrl(url); return; } catch (_e) {}
+        }
+        window.location.href = url;
+      }
+
       function renderVideos() {
         var wrap = document.getElementById("videoFeed");
         if (!wrap) return;
@@ -1276,15 +1083,17 @@
         if (videos.length === 0) {
           wrap.innerHTML =
             "<div class='glass-card' style='padding:18px; text-align:center;'>" +
-            "<p style='font-size:44px; margin:0;'>+</p>" +
-            "<p style='margin:4px 0 8px; font-weight:800; font-size:20px;'>No profile videos</p>" +
-            "<p class='small'>No video data found in database for this account.</p>" +
+            "<p style='font-size:44px; margin:0;'>🎬</p>" +
+            "<p style='margin:4px 0 8px; font-weight:800;'>No profile videos</p>" +
+            "<p class='small'>Paste a TikTok link above and click 'Save Video'.</p>" +
             "</div>";
           return;
         }
 
         wrap.innerHTML = "";
         videos.forEach(function (video) {
+          var url = String(video.video_url || "");
+          var isPublished = !!video.published;
           var card = document.createElement("div");
           card.className = "video-card";
 
@@ -1300,31 +1109,129 @@
           var meta = document.createElement("div");
           meta.className = "video-meta";
           meta.innerHTML =
-            "<div class='small'>Likes: <strong style='color:#fff;'>" + (video.likes_count || 0) + "</strong> | " +
-            "Comments: <strong style='color:#fff;'>" + (video.comments_count || 0) + "</strong></div>";
+            "<div class='small' style='margin-bottom:4px;'>❤️ " + (video.likes_count || 0) +
+            "  💬 " + (video.comments_count || 0) + "</div>";
+
           var videoUrlText = document.createElement("p");
           videoUrlText.className = "video-link";
-          videoUrlText.textContent = String(video.video_url || "");
+          videoUrlText.textContent = url;
 
           var openBtn = document.createElement("button");
           openBtn.className = "btn-buy enabled";
+          openBtn.style.cssText = "font-size:12px; padding:6px 10px; margin-top:6px;";
           openBtn.type = "button";
-          openBtn.textContent = "Open Video";
-          openBtn.addEventListener("click", function () {
-            var url = String(video.video_url || "");
-            if (!url) {
-              showToast("Video URL missing in database.", "warn", 2200);
-              return;
-            }
-            openTikTokUrlSmart(url);
-          });
+          openBtn.textContent = "Open";
+          openBtn.addEventListener("click", function () { openVideoUrl(url); });
+
+          var publishBtn = document.createElement("button");
+          publishBtn.type = "button";
+          publishBtn.style.cssText = "font-size:12px; padding:6px 10px; margin-top:6px; margin-left:6px;";
+          if (isPublished) {
+            publishBtn.className = "btn-buy";
+            publishBtn.textContent = "✓ Published";
+            publishBtn.disabled = true;
+          } else {
+            publishBtn.className = "btn-buy enabled";
+            publishBtn.textContent = "Publish (5⭐/day)";
+            publishBtn.addEventListener("click", function () {
+              publishVideo(url, video.id);
+            });
+          }
+
+          var btnRow = document.createElement("div");
+          btnRow.style.cssText = "display:flex; flex-wrap:wrap; gap:0;";
+          btnRow.appendChild(openBtn);
+          btnRow.appendChild(publishBtn);
 
           meta.appendChild(videoUrlText);
-          meta.appendChild(openBtn);
+          meta.appendChild(btnRow);
           card.appendChild(thumb);
           card.appendChild(meta);
           wrap.appendChild(card);
         });
+      }
+
+      function renderMarketplace() {
+        var wrap = document.getElementById("marketplaceFeed");
+        if (!wrap) return;
+
+        var videos = Array.isArray(state.marketplaceVideos) ? state.marketplaceVideos : [];
+        if (videos.length === 0) {
+          wrap.innerHTML =
+            "<div class='glass-card' style='padding:18px; text-align:center;'>" +
+            "<p style='font-size:40px; margin:0;'>🛒</p>" +
+            "<p style='margin:4px 0 8px; font-weight:800;'>No marketplace videos yet</p>" +
+            "<p class='small'>Publish your video above to appear here!</p>" +
+            "</div>";
+          return;
+        }
+
+        wrap.innerHTML = "";
+        videos.forEach(function (video) {
+          var url = String(video.video_url || "");
+          var owner = String(video.username || "unknown");
+          var videoId = String(video.id || video.video_id || "");
+          var card = document.createElement("div");
+          card.className = "video-card";
+
+          var thumb = document.createElement("img");
+          thumb.className = "video-preview";
+          thumb.alt = "Marketplace video";
+          thumb.src = video.thumbnail_url || inlineSvgAvatar("mkt_" + videoId);
+          thumb.onerror = function () { thumb.onerror = null; thumb.src = inlineSvgAvatar("mkt_" + videoId); };
+
+          var meta = document.createElement("div");
+          meta.className = "video-meta";
+          meta.innerHTML =
+            "<div style='font-weight:700; font-size:13px; margin-bottom:2px;'>@" + owner + "</div>" +
+            "<div class='small' style='margin-bottom:4px;'>❤️ " + (video.likes_count || 0) +
+            "  👁 " + (video.views_count || 0) + "</div>";
+
+          var videoUrlText = document.createElement("p");
+          videoUrlText.className = "video-link";
+          videoUrlText.textContent = url;
+
+          var watchBtn = document.createElement("button");
+          watchBtn.type = "button";
+          watchBtn.className = "btn-buy enabled";
+          watchBtn.style.cssText = "font-size:12px; padding:6px 10px; margin-top:6px; width:100%; box-sizing:border-box;";
+          watchBtn.textContent = "Watch & Like (+1⭐)";
+          watchBtn.addEventListener("click", function () {
+            state.pendingVideoWatch = { videoId: videoId, owner: owner, hiddenAt: null, awarded: false };
+            openVideoUrl(url);
+          });
+
+          meta.appendChild(videoUrlText);
+          meta.appendChild(watchBtn);
+          card.appendChild(thumb);
+          card.appendChild(meta);
+          wrap.appendChild(card);
+        });
+      }
+
+      function publishVideo(url, videoId) {
+        if (!url) { showToast("No video URL to publish.", "warn", 2000); return; }
+        if (state.stars < 5) {
+          showToast("Not enough stars. You need at least 5⭐ to publish.", "warn", 2400);
+          return;
+        }
+        if (!canUseAndroidDb()) {
+          showToast("Database bridge not ready.", "warn", 2200);
+          return;
+        }
+        try {
+          window.AndroidDB.publishVideo(state.username, url, String(videoId || ""), 5);
+          showToast("Publishing… 5⭐ will be deducted.", "success", 1800);
+        } catch (_e) {
+          showToast("Failed to publish video.", "warn", 2200);
+        }
+      }
+
+      function requestMarketplaceVideos() {
+        if (!canUseAndroidDb()) { state.marketplaceVideos = []; renderMarketplace(); return; }
+        try { window.AndroidDB.fetchMarketplaceVideos(state.username); } catch (_e) {
+          state.marketplaceVideos = []; renderMarketplace();
+        }
       }
 
       function renderEarnList() {
@@ -1384,6 +1291,7 @@
         renderFollowerPackages();
         renderShopPackages();
         renderVideos();
+        renderMarketplace();
         renderEarnList();
         pinBottomNav();
       }
@@ -1407,6 +1315,7 @@
         }
         if (tabId === "likesTab") {
           requestProfileVideos();
+          requestMarketplaceVideos();
         }
       }
 
@@ -1461,7 +1370,8 @@
           return;
         }
         try {
-          window.AndroidDB.claimBonus(state.username, String(type || ""));
+          state.pendingBonusType = String(type || "");
+          window.AndroidDB.claimBonus(state.username, state.pendingBonusType);
         } catch (_e) {
           showToast("Failed to claim bonus.", "warn", 2200);
         }
@@ -1499,6 +1409,7 @@
         if (typeof data.stars === "number") state.stars = data.stars;
         if (typeof data.followers === "number") state.followers = data.followers;
         if (typeof data.ad_remaining === "number") state.adRemaining = data.ad_remaining;
+        if (data.free_claimed !== undefined) state.claimedFreeDaily = !!data.free_claimed;
         if (data.tiktok_followers !== undefined && data.tiktok_followers !== null) {
           state.tiktokFollowers = Number(data.tiktok_followers);
         }
@@ -1507,7 +1418,6 @@
         }
         saveState();
         renderAll();
-        fetchTikTokStats(state.username);
       };
 
       window.onAndroidOrderCreated = function (payload) {
@@ -1554,7 +1464,8 @@
             };
           })
           .filter(function (row) {
-            return !!row.order_id && !!row.target_username && row.remaining_followers > 0;
+            /* Hide accounts the current user has already followed */
+            return !!row.order_id && !!row.target_username && row.remaining_followers > 0 && !row.followed;
           }));
 
         renderEarnList();
@@ -1599,16 +1510,40 @@
         requestEarnTarget();
       };
 
+      window.onAndroidAdResult = function (result) {
+        /* result is a plain string: "completed", "skipped", or "failed" */
+        state.pendingAdReward = false;
+        updateRewardInfo(); /* re-enable button + restore label */
+
+        if (result === "completed") {
+          /* Ad fully watched — now claim the reward via Supabase */
+          claimBonus("ad_reward");
+          showToast("✅ Ad finished! Claiming +25 stars...", "success", 2000);
+        } else if (result === "skipped") {
+          showToast("⚠️ You closed the ad early. No reward given.", "warn", 2500);
+        } else {
+          /* failed */
+          showToast("❌ Ad failed to load. Try again later.", "warn", 2500);
+        }
+      };
+
       window.onAndroidBonusResult = function (payload) {
         var data = parsePayload(payload);
         if (!data || data.ok !== true) {
           showToast((data && data.message) || "Bonus claim failed.", "warn", 2300);
+          state.pendingBonusType = null;
           requestUserProfile();
           return;
         }
         if (typeof data.stars === "number") state.stars = data.stars;
         if (typeof data.followers === "number") state.followers = data.followers;
         if (typeof data.ad_remaining === "number") state.adRemaining = data.ad_remaining;
+        if (data.free_claimed !== undefined) state.claimedFreeDaily = !!data.free_claimed;
+
+        if (state.pendingBonusType === "free_daily") {
+          state.claimedFreeDaily = true;
+        }
+        state.pendingBonusType = null;
         saveState();
         renderAll();
         showToast(String(data.message || "Bonus claimed."), "success", 2100);
@@ -1619,6 +1554,11 @@
         if (!data || data.ok !== true) {
           state.videos = [];
           renderVideos();
+          if (state.pendingFollowCheck) {
+            state.pendingFollowCheck = false;
+            showToast("Could not verify follow. Check your connection.", "warn", 2400);
+            state.followSession = null;
+          }
           return;
         }
         state.videos = Array.isArray(data.videos) ? data.videos : [];
@@ -1630,6 +1570,63 @@
         }
         renderVideos();
         updateTikTokStats();
+
+        /* ── Follow verification via following-count increase ── */
+        if (state.pendingFollowCheck && state.followSession && !state.followSession.awarded) {
+          state.pendingFollowCheck = false;
+          var before = state.followSession.followingBefore;
+          var after = state.tiktokFollowing;
+          if (before !== null && after !== null && after > before) {
+            /* Following count went up → real follow confirmed */
+            showToast("✅ Follow confirmed! +5 stars awarded.", "success", 2400);
+            _confirmFollowAward();
+          } else if (before === null || after === null) {
+            /* Could not read count → tell user we can't verify */
+            showToast("⚠️ Cannot verify follow (TikTok stats unavailable). No reward given.", "warn", 3000);
+            state.followSession = null;
+          } else {
+            /* Following count unchanged → did not follow */
+            showToast("❌ No follow detected. Follow the account first, then come back.", "warn", 3000);
+            state.followSession = null;
+          }
+        }
+      };
+
+      window.onAndroidMarketplaceVideos = function (payload) {
+        var data = parsePayload(payload);
+        if (!data || data.ok !== true) {
+          state.marketplaceVideos = [];
+          renderMarketplace();
+          return;
+        }
+        state.marketplaceVideos = Array.isArray(data.videos) ? data.videos : [];
+        renderMarketplace();
+      };
+
+      window.onAndroidPublishResult = function (payload) {
+        var data = parsePayload(payload);
+        if (!data || data.ok !== true) {
+          showToast((data && data.message) || "Publish failed.", "warn", 2400);
+          return;
+        }
+        if (typeof data.stars === "number") state.stars = data.stars;
+        saveState();
+        renderAll();
+        requestProfileVideos();
+        requestMarketplaceVideos();
+        showToast("Video published! 5⭐ deducted.", "success", 2200);
+      };
+
+      window.onAndroidVideoInteraction = function (payload) {
+        var data = parsePayload(payload);
+        if (!data || data.ok !== true) {
+          showToast((data && data.message) || "Interaction not recorded.", "warn", 2200);
+          return;
+        }
+        if (typeof data.stars === "number") state.stars = data.stars;
+        saveState();
+        renderAll();
+        showToast("Watch recorded! +1⭐ earned.", "success", 2000);
       };
 
       window.onAndroidError = function (message) {
@@ -1654,13 +1651,18 @@
           orderId: state.targetTask ? state.targetTask.orderId : "",
           target: clean,
           hiddenAt: null,
-          awarded: false
+          awarded: false,
+          followingBefore: (state.tiktokFollowing !== null ? state.tiktokFollowing : null)
         } : null;
 
         if (window.Android && typeof window.Android.openTikTokProfile === "function") {
-          try { window.Android.openTikTokProfile(clean); return; } catch (_e) {}
+          try {
+            window.Android.openTikTokProfile(clean);
+            return;
+          } catch (_e) {}
         }
-        openTikTokUrlSmart(webUrl);
+
+        window.location.href = webUrl;
       }
 
       function handleFollowReturn() {
@@ -1670,37 +1672,50 @@
           return;
         }
 
-        var awayMs = Date.now() - state.followSession.hiddenAt;
-        if (awayMs < 5000) {
-          showToast("No follow detected. Please stay longer on TikTok profile.", "warn", 2200);
+        /* Trigger fresh TikTok profile scrape to check if following count increased.
+           onAndroidProfileVideos will complete the check via pendingFollowCheck flag. */
+        if (canUseAndroidDb()) {
+          state.pendingFollowCheck = true;
+          try {
+            window.AndroidDB.fetchProfileVideos(state.username);
+          } catch (_e) {
+            state.pendingFollowCheck = false;
+            showToast("Could not verify follow. Try again.", "warn", 2200);
+            state.followSession = null;
+          }
+        } else {
+          /* No DB: fall back — trust if user was away ≥ 5s */
+          var awayMs = Date.now() - state.followSession.hiddenAt;
+          if (awayMs >= 5000) {
+            state.stars += 5;
+            saveState();
+            renderAll();
+            showToast("Follow detected: +5 stars.", "success", 2000);
+          } else {
+            showToast("No follow detected.", "warn", 2200);
+          }
           state.followSession = null;
-          return;
         }
+      }
 
+      function _confirmFollowAward() {
+        if (!state.followSession || state.followSession.awarded) return;
         if (!state.targetTask || !state.targetTask.orderId) {
           showToast("Task expired. Loading next target.", "warn", 1800);
           state.followSession = null;
           requestEarnTarget();
           return;
         }
-
         state.followSession.awarded = true;
-        if (canUseAndroidDb()) {
-          try {
-            window.AndroidDB.completeFollow(
-              state.username,
-              state.targetTask.orderId,
-              state.targetTask.targetUser,
-              5
-            );
-          } catch (_e) {
-            showToast("Failed to submit follow result.", "warn", 2200);
-          }
-        } else {
-          state.stars += 5;
-          saveState();
-          renderAll();
-          showToast("Follow detected: +5 stars.", "success", 2000);
+        try {
+          window.AndroidDB.completeFollow(
+            state.username,
+            state.targetTask.orderId,
+            state.targetTask.targetUser,
+            5
+          );
+        } catch (_e) {
+          showToast("Failed to submit follow result.", "warn", 2200);
         }
         state.followSession = null;
       }
@@ -1771,18 +1786,29 @@
         claimBonus("free_daily");
       });
 
-      document.getElementById("shareBonusBtn").addEventListener("click", function () {
-        if (window.Android && typeof window.Android.shareGame === "function") {
-          try { window.Android.shareGame(); } catch (_e) {}
-        }
-        claimBonus("share_bonus");
-      });
-
       document.getElementById("adBonusBtn").addEventListener("click", function () {
-        if (window.Android && typeof window.Android.showAd === "function") {
-          try { window.Android.showAd(); } catch (_e) {}
+        if (state.adRemaining <= 0) {
+          showToast("No more ad rewards today.", "warn", 2200);
+          return;
         }
-        claimBonus("ad_reward");
+        if (state.pendingAdReward) {
+          showToast("Ad is already loading...", "warn", 1500);
+          return;
+        }
+        if (window.Android && typeof window.Android.showAd === "function") {
+          state.pendingAdReward = true;
+          updateRewardInfo(); /* disable button immediately */
+          try {
+            window.Android.showAd();
+            /* Stars are awarded ONLY inside window.onAndroidAdResult — NOT here */
+          } catch (_e) {
+            state.pendingAdReward = false;
+            updateRewardInfo();
+            showToast("Could not load ad. Try again.", "warn", 2000);
+          }
+        } else {
+          showToast("Ads not available on this device.", "warn", 2000);
+        }
       });
 
       document.getElementById("logoutBtn").addEventListener("click", function () {
@@ -1790,10 +1816,15 @@
         state.stars = 25;
         state.followers = 0;
         state.adRemaining = 4;
+        state.pendingAdReward = false;
         state.targetTask = null;
         state.followSession = null;
         state.targetList = [];
         state.videos = [];
+        state.marketplaceVideos = [];
+        state.pendingVideoWatch = null;
+        state.pendingFollowCheck = false;
+        state.claimedFreeDaily = false;
         state.tiktokFollowers = null;
         state.tiktokFollowing = null;
         saveState();
@@ -1819,22 +1850,24 @@
             showToast("Please paste a TikTok video link first.", "warn", 2000);
             return;
           }
-          // tambah ke senarai profile videos dalam memori (state)
-          if (url && url.indexOf("tiktok.com") !== -1) {
-            var video = {
-              id: Date.now(),
-              video_url: url,
-              thumbnail_url: "",
-              likes_count: 0,
-              comments_count: 0
-            };
-            if (!Array.isArray(state.videos)) {
-              state.videos = [];
+          /* Save to database — callback onAndroidProfileVideos will refresh the list */
+          if (canUseAndroidDb()) {
+            try {
+              window.AndroidDB.saveProfileVideo(state.username, url);
+            } catch (_e) {
+              showToast("Failed to save video.", "warn", 2000);
+              return;
             }
-            state.videos.unshift(video);
-            renderVideos();
+          } else {
+            /* Fallback: add to local state immediately */
+            var exists = state.videos.some(function (v) { return v.video_url === url; });
+            if (!exists) {
+              state.videos.push({ video_url: url, likes_count: 0, comments_count: 0, published: false });
+              renderVideos();
+            }
           }
-          openTikTokUrlSmart(url);
+          manualVideoInput.value = "";
+          showToast("Video saved to your profile!", "success", 1800);
         });
       }
 
@@ -1858,6 +1891,9 @@
           if (state.followSession && !state.followSession.hiddenAt) {
             state.followSession.hiddenAt = Date.now();
           }
+          if (state.pendingVideoWatch && !state.pendingVideoWatch.hiddenAt) {
+            state.pendingVideoWatch.hiddenAt = Date.now();
+          }
           return;
         }
 
@@ -1872,6 +1908,37 @@
         }
 
         handleFollowReturn();
+
+        /* Handle marketplace video watch → earn +1 star */
+        if (state.pendingVideoWatch && !state.pendingVideoWatch.awarded) {
+          var watchAway = state.pendingVideoWatch.hiddenAt
+            ? Date.now() - state.pendingVideoWatch.hiddenAt : 0;
+          if (watchAway >= 5000) {
+            state.pendingVideoWatch.awarded = true;
+            if (canUseAndroidDb()) {
+              try {
+                window.AndroidDB.recordVideoInteraction(
+                  state.username,
+                  state.pendingVideoWatch.videoId,
+                  state.pendingVideoWatch.owner
+                );
+              } catch (_e) {
+                state.stars += 1;
+                saveState();
+                renderAll();
+                showToast("+1⭐ earned for watching!", "success", 2000);
+              }
+            } else {
+              state.stars += 1;
+              saveState();
+              renderAll();
+              showToast("+1⭐ earned for watching!", "success", 2000);
+            }
+          } else {
+            showToast("Watch the video for at least 5 seconds to earn a star.", "warn", 2200);
+          }
+          state.pendingVideoWatch = null;
+        }
       });
 
       if (state.isLoggedIn && state.username) {
