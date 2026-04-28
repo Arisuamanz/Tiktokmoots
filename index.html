@@ -753,9 +753,212 @@
 
   <div id="toast" class="toast-banner"></div>
 
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
     (function () {
       var APP_ID = "tiktok-moots-v2";
+
+      /* ─────────────────────────────────────────────────────────────
+         Supabase bridge — talks to the database directly from the
+         website, plus fetches real TikTok followers/following counts
+         from a public endpoint. Keeps the same window.AndroidDB +
+         window.onAndroid* contract so the rest of the app is untouched.
+         ───────────────────────────────────────────────────────────── */
+      var SUPABASE_URL = "https://jldrkztzqdgxqafgtwfz.supabase.co";
+      var SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImpsZHJrenR6cWRneHFhZmd0d2Z6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUwNjMwOTksImV4cCI6MjA5MDYzOTA5OX0.eCB2MTyZPdVaqD4vDwwqRxXFRNoHDhAE9w2qmDbERA8";
+
+      var __sb = (typeof window.supabase !== "undefined" && window.supabase.createClient)
+        ? window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+            auth: { persistSession: false, autoRefreshToken: false }
+          })
+        : null;
+
+      function __normHandle(value) {
+        return String(value || "").toLowerCase().replace(/\s+/g, "").replace(/^@+/, "").trim();
+      }
+
+      function __emitAndroid(name, payload) {
+        try {
+          if (typeof window[name] === "function") {
+            var msg = (typeof payload === "string") ? payload : JSON.stringify(payload);
+            window[name](msg);
+          }
+        } catch (_e) {}
+      }
+
+      function __todayUtc() {
+        var d = new Date();
+        return d.getUTCFullYear() + "-" +
+          String(d.getUTCMonth() + 1).padStart(2, "0") + "-" +
+          String(d.getUTCDate()).padStart(2, "0");
+      }
+
+      /* Fetch real TikTok followers/following from the public tikwm.com
+         endpoint. Resolves to null if blocked, rate-limited, or offline. */
+      function __fetchTikTokStats(username) {
+        var clean = __normHandle(username);
+        if (!clean) return Promise.resolve(null);
+        var url = "https://www.tikwm.com/api/user/info?unique_id=" + encodeURIComponent(clean);
+        return fetch(url, { method: "GET", headers: { "Accept": "application/json" } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (json) {
+            if (!json || json.code !== 0 || !json.data || !json.data.stats) return null;
+            return {
+              followers: Number(json.data.stats.followerCount || 0),
+              following: Number(json.data.stats.followingCount || 0)
+            };
+          })
+          .catch(function () { return null; });
+      }
+
+      if (!window.AndroidDB) {
+        window.AndroidDB = {
+          syncUser: function (username) {
+            if (!__sb) return;
+            var u = __normHandle(username);
+            if (!u) return;
+            __sb.from("users")
+              .upsert({ username: u }, { onConflict: "username", ignoreDuplicates: true })
+              .then(function () {});
+          },
+
+          getUserProfile: function (username) {
+            var u = __normHandle(username);
+            if (!__sb || !u) {
+              __emitAndroid("onAndroidUserProfile", { ok: false });
+              return;
+            }
+            __sb.from("users")
+              .upsert({ username: u }, { onConflict: "username", ignoreDuplicates: true })
+              .then(function () {
+                __sb.from("users").select("*").eq("username", u).maybeSingle().then(function (res) {
+                  var d = res && res.data;
+                  var today = __todayUtc();
+                  var adRemaining = (d && d.ad_reward_date === today)
+                    ? Math.max(0, 4 - (Number(d.ad_reward_count) || 0))
+                    : 4;
+                  var freeClaimed = !!(d && d.free_bonus_date === today);
+                  var profile = {
+                    ok: true,
+                    username: u,
+                    stars: d ? Number(d.stars) : 25,
+                    followers: d ? Number(d.followers) : 0,
+                    ad_remaining: adRemaining,
+                    free_claimed: freeClaimed
+                  };
+                  __fetchTikTokStats(u).then(function (stats) {
+                    if (stats) {
+                      profile.tiktok_followers = stats.followers;
+                      profile.tiktok_following = stats.following;
+                    }
+                    __emitAndroid("onAndroidUserProfile", profile);
+                  });
+                });
+              });
+          },
+
+          createFollowerOrder: function (username, amount, cost) {
+            if (!__sb) {
+              __emitAndroid("onAndroidOrderCreated", { ok: false, message: "Database not ready" });
+              return;
+            }
+            __sb.rpc("create_follower_order", {
+              p_username: __normHandle(username),
+              p_followers_requested: Number(amount) || 0,
+              p_stars_cost: Number(cost) || 0
+            }).then(function (res) {
+              if (res.error) __emitAndroid("onAndroidOrderCreated", { ok: false, message: res.error.message });
+              else __emitAndroid("onAndroidOrderCreated", res.data || { ok: false });
+            });
+          },
+
+          fetchEarnTarget: function (username) {
+            if (!__sb) return;
+            __sb.rpc("get_next_follow_target", { p_actor_username: __normHandle(username) })
+              .then(function (res) {
+                __emitAndroid("onAndroidEarnTarget", (res && res.data) || { ok: false });
+              });
+          },
+
+          fetchEarnTargetList: function (username, sort, limit) {
+            if (!__sb) return;
+            __sb.rpc("list_follow_targets", {
+              p_actor_username: __normHandle(username),
+              p_sort: sort || "old",
+              p_limit: Number(limit) || 50
+            }).then(function (res) {
+              __emitAndroid("onAndroidEarnTargetList", (res && res.data) || { ok: false, targets: [] });
+            });
+          },
+
+          completeFollow: function (username, orderId, target, stars) {
+            if (!__sb) return;
+            __sb.rpc("complete_follow_task", {
+              p_actor_username: __normHandle(username),
+              p_order_id: String(orderId || ""),
+              p_target_username: __normHandle(target),
+              p_stars_awarded: Number(stars) || 5
+            }).then(function (res) {
+              if (res.error) __emitAndroid("onAndroidFollowResult", { ok: false, message: res.error.message });
+              else __emitAndroid("onAndroidFollowResult", res.data || { ok: false });
+            });
+          },
+
+          fetchProfileVideos: function (username) {
+            var u = __normHandle(username);
+            if (!__sb || !u) {
+              __emitAndroid("onAndroidProfileVideos", { ok: false, videos: [] });
+              return;
+            }
+            __sb.rpc("get_profile_videos", { p_username: u }).then(function (res) {
+              var data = (res && res.data) || { ok: false, videos: [] };
+              __fetchTikTokStats(u).then(function (stats) {
+                if (stats) {
+                  data.tiktok_followers = stats.followers;
+                  data.tiktok_following = stats.following;
+                }
+                __emitAndroid("onAndroidProfileVideos", data);
+              });
+            });
+          },
+
+          claimBonus: function (username, type) {
+            if (!__sb) {
+              __emitAndroid("onAndroidBonusResult", { ok: false, message: "Database not ready" });
+              return;
+            }
+            __sb.rpc("claim_bonus", {
+              p_username: __normHandle(username),
+              p_bonus_type: String(type || "")
+            }).then(function (res) {
+              if (res.error) __emitAndroid("onAndroidBonusResult", { ok: false, message: res.error.message });
+              else __emitAndroid("onAndroidBonusResult", res.data || { ok: false });
+            });
+          },
+
+          saveProfileVideo: function (username, url) {
+            if (!__sb) return;
+            var u = __normHandle(username);
+            var clean = String(url || "").trim();
+            if (!u || !clean) return;
+            __sb.from("profile_videos")
+              .upsert({ username: u, video_url: clean },
+                      { onConflict: "username,video_url", ignoreDuplicates: true })
+              .then(function () { window.AndroidDB.fetchProfileVideos(u); });
+          },
+
+          /* Marketplace endpoints have no server functions yet — safe stubs. */
+          fetchMarketplaceVideos: function () {
+            __emitAndroid("onAndroidMarketplaceVideos", { ok: true, videos: [] });
+          },
+          publishVideo: function () {
+            __emitAndroid("onAndroidPublishResult", { ok: false, message: "Marketplace not available yet." });
+          },
+          recordVideoInteraction: function () {
+            __emitAndroid("onAndroidVideoInteraction", { ok: true });
+          }
+        };
+      }
 
       var FOLLOWER_PACKAGES = [
         { id: 1, amount: 5, cost: 50 },
