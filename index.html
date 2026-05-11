@@ -606,6 +606,174 @@
       .handle { font-size: 20px; }
       .stats strong { font-size: 22px; }
     }
+
+    .chat-messages {
+      border-radius: 16px;
+      border: 1px solid var(--line);
+      background: var(--card);
+      padding: 12px;
+      height: calc(100vh - 260px);
+      min-height: 240px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 10px;
+      -webkit-overflow-scrolling: touch;
+    }
+
+    .chat-empty {
+      color: var(--muted);
+      font-size: 13px;
+      text-align: center;
+      padding: 18px 6px;
+    }
+
+    .chat-msg {
+      display: flex;
+      flex-direction: column;
+      max-width: 82%;
+    }
+
+    .chat-msg.own { align-self: flex-end; align-items: flex-end; }
+    .chat-msg.other { align-self: flex-start; align-items: flex-start; }
+
+    .chat-author {
+      font-size: 11px;
+      color: #b8c9ea;
+      font-weight: 800;
+      margin-bottom: 3px;
+      padding: 0 4px;
+    }
+
+    .chat-bubble {
+      padding: 9px 12px;
+      border-radius: 14px;
+      font-size: 14px;
+      line-height: 1.4;
+      word-break: break-word;
+      white-space: pre-wrap;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      color: var(--text);
+    }
+
+    .chat-msg.own .chat-bubble {
+      background: linear-gradient(135deg, #5878ff, #47c8ff);
+      color: #fff;
+      border-color: rgba(255, 255, 255, 0.18);
+    }
+
+    .chat-link {
+      display: inline-block;
+      margin-top: 6px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      background: rgba(15, 25, 45, 0.55);
+      border: 1px solid rgba(149, 186, 255, 0.4);
+      color: #aee0ff;
+      font-size: 12px;
+      font-weight: 700;
+      text-decoration: none;
+      cursor: pointer;
+      word-break: break-all;
+      max-width: 100%;
+    }
+
+    .chat-link::before { content: "▶ "; margin-right: 2px; }
+
+    .chat-time {
+      font-size: 10px;
+      color: #8ea4cf;
+      margin-top: 3px;
+      padding: 0 4px;
+    }
+
+    .chat-input-bar {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px;
+      border-radius: 14px;
+      border: 1px solid rgba(166, 189, 255, 0.25);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .chat-attach-btn, .chat-send-btn {
+      border: 0;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-weight: 800;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+
+    .chat-attach-btn {
+      background: rgba(255, 255, 255, 0.08);
+      color: #d9e7ff;
+      font-size: 16px;
+      padding: 9px 10px;
+    }
+
+    .chat-attach-btn.active {
+      background: rgba(71, 200, 255, 0.25);
+      color: #aee0ff;
+      border: 1px solid rgba(149, 186, 255, 0.4);
+    }
+
+    .chat-send-btn {
+      background: linear-gradient(135deg, var(--pink), #7c5dff 58%, #45ceff);
+      color: #fff;
+      font-size: 14px;
+    }
+
+    .chat-send-btn:disabled {
+      opacity: 0.55;
+      cursor: not-allowed;
+    }
+
+    .chat-input {
+      flex: 1;
+      min-width: 0;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text);
+      font-size: 14px;
+      font-weight: 600;
+      padding: 6px 4px;
+    }
+
+    .chat-link-preview {
+      margin-top: 8px;
+      padding: 8px 10px;
+      border-radius: 10px;
+      border: 1px dashed rgba(149, 186, 255, 0.4);
+      background: rgba(15, 25, 45, 0.4);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 12px;
+      color: #aee0ff;
+    }
+
+    .chat-link-preview-text {
+      flex: 1;
+      min-width: 0;
+      word-break: break-all;
+    }
+
+    .chat-link-clear {
+      border: 0;
+      background: rgba(255, 91, 118, 0.25);
+      color: #ffd4db;
+      border-radius: 8px;
+      padding: 2px 10px;
+      font-weight: 900;
+      font-size: 16px;
+      cursor: pointer;
+      line-height: 1;
+    }
   </style>
 </head>
 <body>
@@ -686,20 +854,19 @@
       </section>
 
       <section id="likesTab" class="tab-content">
-        <p class="section-title">My Profile Videos</p>
-        <div class="glass-card" style="margin-bottom:12px; padding:14px; display:flex; flex-direction:column; gap:10px; overflow:hidden; box-sizing:border-box;">
-          <p class="small" style="margin:0; white-space:normal;">Paste a TikTok video link to save it to your profile.</p>
-          <div class="input-wrap" style="margin-bottom:0; overflow:hidden; box-sizing:border-box;">
-            <input id="manualVideoUrl" type="text" placeholder="https://www.tiktok.com/@user/video/123..." autocomplete="off" style="min-width:0; font-size:13px;" />
-          </div>
-          <button id="openManualVideoBtn" class="btn btn-primary" type="button" style="box-sizing:border-box; font-size:14px;">💾 Save Video</button>
+        <p class="section-title">Public Chat</p>
+        <div id="chatMessages" class="chat-messages">
+          <div class="chat-empty">Loading messages…</div>
         </div>
-        <div id="videoFeed"></div>
-        <p class="section-title" style="margin-top:18px;">Video Marketplace</p>
-        <div class="glass-card" style="margin-bottom:12px; padding:12px; box-sizing:border-box;">
-          <p class="small" style="margin:0;">Watch &amp; like videos to earn <strong>+1 ⭐</strong> per video. Publish your video here for <strong>5 ⭐/day</strong> to get real views.</p>
+        <div id="chatLinkPreview" class="chat-link-preview hidden">
+          <span class="chat-link-preview-text"></span>
+          <button id="chatLinkClear" type="button" class="chat-link-clear" title="Remove link">×</button>
         </div>
-        <div id="marketplaceFeed"></div>
+        <div class="chat-input-bar">
+          <button id="chatAttachBtn" class="chat-attach-btn" type="button" title="Attach TikTok link">&#128279;</button>
+          <input id="chatInput" class="chat-input" type="text" placeholder="Type a message…" maxlength="500" autocomplete="off" />
+          <button id="chatSendBtn" class="chat-send-btn" type="button">Send</button>
+        </div>
       </section>
 
       <section id="shopTab" class="tab-content">
@@ -745,7 +912,7 @@
     <nav class="bottom-nav">
       <button class="tab-btn active" data-tab="earnTab" type="button"><span class="icon">&#9733;</span><span>Earn</span></button>
       <button class="tab-btn" data-tab="followersTab" type="button"><span class="icon">&#128101;</span><span>Followers</span></button>
-      <button class="tab-btn" data-tab="likesTab" type="button"><span class="icon">&#10084;</span><span>Likes</span></button>
+      <button class="tab-btn" data-tab="likesTab" type="button"><span class="icon">&#128172;</span><span>Chat</span></button>
       <button class="tab-btn" data-tab="shopTab" type="button"><span class="icon">&#128717;</span><span>Shop</span></button>
       <button class="tab-btn" data-tab="settingsTab" type="button"><span class="icon">&#9881;</span><span>Settings</span></button>
     </nav>
@@ -1437,6 +1604,180 @@
         }
       }
 
+      /* ────────── Public Chat (global room) ────────── */
+      var __chatChannel = null;
+      var __chatLoadedIds = Object.create(null);
+      var __chatPendingLink = "";
+
+      function __isTikTokUrl(url) {
+        var u = String(url || "").trim();
+        if (!/^https?:\/\//i.test(u)) return false;
+        return /(^|\.)tiktok\.com\//i.test(u) || /(^|\.)vm\.tiktok\.com\//i.test(u);
+      }
+
+      function __extractTikTokUrl(text) {
+        var match = String(text || "").match(/https?:\/\/[^\s]*tiktok\.com\/[^\s]+/i);
+        return match ? match[0] : "";
+      }
+
+      function __formatChatTime(ts) {
+        try {
+          var d = new Date(ts);
+          var hh = String(d.getHours()).padStart(2, "0");
+          var mm = String(d.getMinutes()).padStart(2, "0");
+          return hh + ":" + mm;
+        } catch (_e) { return ""; }
+      }
+
+      function appendChatMessage(msg, scroll) {
+        var wrap = document.getElementById("chatMessages");
+        if (!wrap || !msg || !msg.id) return;
+        if (__chatLoadedIds[msg.id]) return;
+        __chatLoadedIds[msg.id] = true;
+
+        var empty = wrap.querySelector(".chat-empty");
+        if (empty) empty.remove();
+
+        var author = String(msg.username || "user").toLowerCase();
+        var isOwn = author === String(state.username || "").toLowerCase();
+        var row = document.createElement("div");
+        row.className = "chat-msg " + (isOwn ? "own" : "other");
+
+        var nameEl = document.createElement("div");
+        nameEl.className = "chat-author";
+        nameEl.textContent = "@" + author;
+        row.appendChild(nameEl);
+
+        var text = String(msg.content || "");
+        if (text) {
+          var bubble = document.createElement("div");
+          bubble.className = "chat-bubble";
+          bubble.textContent = text;
+          row.appendChild(bubble);
+        }
+
+        var url = String(msg.video_url || "").trim();
+        if (url && __isTikTokUrl(url)) {
+          var link = document.createElement("a");
+          link.className = "chat-link";
+          link.href = url;
+          link.textContent = url;
+          link.addEventListener("click", function (e) {
+            e.preventDefault();
+            openVideoUrl(url);
+          });
+          row.appendChild(link);
+        }
+
+        var time = document.createElement("div");
+        time.className = "chat-time";
+        time.textContent = __formatChatTime(msg.created_at);
+        row.appendChild(time);
+
+        wrap.appendChild(row);
+        if (scroll !== false) wrap.scrollTop = wrap.scrollHeight;
+      }
+
+      function loadChatHistory() {
+        var wrap = document.getElementById("chatMessages");
+        if (!wrap) return;
+        if (!__sb) {
+          wrap.innerHTML = "<div class='chat-empty'>Chat unavailable — database not ready.</div>";
+          return;
+        }
+        wrap.innerHTML = "<div class='chat-empty'>Loading messages…</div>";
+        __chatLoadedIds = Object.create(null);
+        __sb.from("public_chat_messages")
+          .select("id, username, content, video_url, created_at")
+          .order("created_at", { ascending: false })
+          .limit(100)
+          .then(function (res) {
+            if (res.error) {
+              wrap.innerHTML = "<div class='chat-empty'>Could not load messages.</div>";
+              return;
+            }
+            var rows = (res.data || []).slice().reverse();
+            wrap.innerHTML = "";
+            if (rows.length === 0) {
+              wrap.innerHTML = "<div class='chat-empty'>No messages yet. Be the first to say hi!</div>";
+              return;
+            }
+            rows.forEach(function (m) { appendChatMessage(m, false); });
+            wrap.scrollTop = wrap.scrollHeight;
+          });
+      }
+
+      function subscribeChatRealtime() {
+        if (!__sb || __chatChannel) return;
+        try {
+          __chatChannel = __sb.channel("public_chat_messages_room")
+            .on("postgres_changes", {
+              event: "INSERT",
+              schema: "public",
+              table: "public_chat_messages"
+            }, function (payload) {
+              if (payload && payload.new) appendChatMessage(payload.new, true);
+            })
+            .subscribe();
+        } catch (_e) {}
+      }
+
+      function unsubscribeChatRealtime() {
+        if (!__sb || !__chatChannel) return;
+        try { __sb.removeChannel(__chatChannel); } catch (_e) {}
+        __chatChannel = null;
+      }
+
+      function setChatLinkPreview(url) {
+        __chatPendingLink = String(url || "").trim();
+        var preview = document.getElementById("chatLinkPreview");
+        var label = preview && preview.querySelector(".chat-link-preview-text");
+        var attachBtn = document.getElementById("chatAttachBtn");
+        if (!preview || !label) return;
+        if (__chatPendingLink) {
+          label.textContent = __chatPendingLink;
+          preview.classList.remove("hidden");
+          if (attachBtn) attachBtn.classList.add("active");
+        } else {
+          label.textContent = "";
+          preview.classList.add("hidden");
+          if (attachBtn) attachBtn.classList.remove("active");
+        }
+      }
+
+      function sendChatMessage() {
+        var input = document.getElementById("chatInput");
+        var sendBtn = document.getElementById("chatSendBtn");
+        if (!input) return;
+        var text = String(input.value || "").trim();
+        var link = __chatPendingLink;
+
+        if (!link) {
+          var inline = __extractTikTokUrl(text);
+          if (inline) link = inline;
+        }
+        if (!text && !link) { showToast("Type a message first.", "warn", 1500); return; }
+        if (!__sb) { showToast("Chat unavailable.", "warn", 1800); return; }
+        if (!state.username) { showToast("Login required.", "warn", 1800); return; }
+
+        var payload = {
+          username: __normHandle(state.username),
+          content: text || "Shared a TikTok video",
+          video_url: link || null
+        };
+
+        if (sendBtn) sendBtn.disabled = true;
+        __sb.from("public_chat_messages").insert(payload).then(function (res) {
+          if (sendBtn) sendBtn.disabled = false;
+          if (res.error) {
+            showToast("Failed to send: " + (res.error.message || ""), "warn", 2400);
+            return;
+          }
+          input.value = "";
+          setChatLinkPreview("");
+        });
+      }
+
       function renderEarnList() {
         var wrap = document.getElementById("earnList");
         if (!wrap) return;
@@ -1517,8 +1858,10 @@
           requestUserProfile();
         }
         if (tabId === "likesTab") {
-          requestProfileVideos();
-          requestMarketplaceVideos();
+          loadChatHistory();
+          subscribeChatRealtime();
+          var chatInputEl = document.getElementById("chatInput");
+          if (chatInputEl) setTimeout(function () { try { chatInputEl.focus(); } catch (_e) {} }, 80);
         }
       }
 
@@ -1955,6 +2298,7 @@
             } catch (_e) {}
             requestEarnTarget();
           }
+          subscribeChatRealtime();
 
           loginBtn.disabled = false;
           loginBtn.textContent = "Continue";
@@ -2031,6 +2375,11 @@
         state.tiktokFollowers = null;
         state.tiktokFollowing = null;
         saveState();
+        unsubscribeChatRealtime();
+        __chatLoadedIds = Object.create(null);
+        setChatLinkPreview("");
+        var chatWrapEl = document.getElementById("chatMessages");
+        if (chatWrapEl) chatWrapEl.innerHTML = "<div class='chat-empty'>Loading messages…</div>";
         appView.classList.add("hidden");
         loginView.classList.remove("hidden");
         usernameInput.value = state.username || "";
@@ -2072,6 +2421,36 @@
           manualVideoInput.value = "";
           showToast("Video saved to your profile!", "success", 1800);
         });
+      }
+
+      var chatSendBtn = document.getElementById("chatSendBtn");
+      var chatInputEl = document.getElementById("chatInput");
+      var chatAttachBtn = document.getElementById("chatAttachBtn");
+      var chatLinkClearBtn = document.getElementById("chatLinkClear");
+      if (chatSendBtn) chatSendBtn.addEventListener("click", sendChatMessage);
+      if (chatInputEl) {
+        chatInputEl.addEventListener("keydown", function (e) {
+          if (e.key === "Enter" && !e.shiftKey) {
+            e.preventDefault();
+            sendChatMessage();
+          }
+        });
+      }
+      if (chatAttachBtn) {
+        chatAttachBtn.addEventListener("click", function () {
+          var url = window.prompt("Paste a TikTok video link to share:", __chatPendingLink || "");
+          if (url === null) return;
+          var trimmed = String(url).trim();
+          if (!trimmed) { setChatLinkPreview(""); return; }
+          if (!__isTikTokUrl(trimmed)) {
+            showToast("Please paste a valid TikTok link.", "warn", 2000);
+            return;
+          }
+          setChatLinkPreview(trimmed);
+        });
+      }
+      if (chatLinkClearBtn) {
+        chatLinkClearBtn.addEventListener("click", function () { setChatLinkPreview(""); });
       }
 
       if (earnSortEl) {
@@ -2157,6 +2536,7 @@
           } catch (_e) {}
           requestEarnTarget();
         }
+        subscribeChatRealtime();
       } else {
         usernameInput.value = state.username;
       }
