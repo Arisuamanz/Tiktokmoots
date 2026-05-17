@@ -612,14 +612,51 @@
       border: 1px solid var(--line);
       background: var(--card);
       padding: 12px;
-      height: calc(100vh - 260px);
-      min-height: 240px;
+      height: calc(var(--vh, 1vh) * 100 - 260px);
+      min-height: 160px;
+      max-height: calc(var(--vh, 1vh) * 100 - 200px);
       overflow-y: auto;
       display: flex;
       flex-direction: column;
       gap: 10px;
       margin-bottom: 10px;
       -webkit-overflow-scrolling: touch;
+    }
+
+    body.keyboard-open .bottom-nav { display: none !important; }
+
+    body.keyboard-open .chat-input-bar {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 0;
+      width: calc(100% - 28px);
+      max-width: 412px;
+      z-index: 50;
+      background: rgba(15, 20, 38, 0.98);
+      backdrop-filter: blur(12px);
+      border-radius: 14px 14px 0 0;
+      border-bottom: 0;
+      box-shadow: 0 -6px 18px rgba(0, 0, 0, 0.35);
+    }
+
+    body.keyboard-open #likesTab.tab-content.active .chat-messages {
+      height: calc(var(--vh, 1vh) * 100 - 170px);
+      max-height: calc(var(--vh, 1vh) * 100 - 170px);
+      min-height: 80px;
+      margin-bottom: 70px;
+    }
+
+    body.keyboard-open #likesTab.tab-content.active .chat-link-preview {
+      position: fixed;
+      left: 50%;
+      transform: translateX(-50%);
+      bottom: 62px;
+      width: calc(100% - 28px);
+      max-width: 412px;
+      z-index: 50;
+      margin: 0;
+      background: rgba(15, 20, 38, 0.98);
     }
 
     .chat-empty {
@@ -1182,9 +1219,16 @@
         return (raw || "").toLowerCase().replace(/\s+/g, "").replace(/^@+/, "").trim();
       }
 
+      var __maxAvailHeight = 0;
       function setViewportHeight() {
         var h = window.visualViewport ? window.visualViewport.height : window.innerHeight;
         document.documentElement.style.setProperty("--vh", (h * 0.01) + "px");
+        if (h > __maxAvailHeight) __maxAvailHeight = h;
+        var diff = __maxAvailHeight - h;
+        var kbOpen = diff > 150;
+        if (document.body) {
+          document.body.classList.toggle("keyboard-open", kbOpen);
+        }
         pinBottomNav();
       }
 
@@ -1608,6 +1652,7 @@
       var __chatChannel = null;
       var __chatLoadedIds = Object.create(null);
       var __chatPendingLink = "";
+      var __chatHistoryLoaded = false;
 
       function __isTikTokUrl(url) {
         var u = String(url || "").trim();
@@ -1685,7 +1730,10 @@
           wrap.innerHTML = "<div class='chat-empty'>Chat unavailable — database not ready.</div>";
           return;
         }
-        wrap.innerHTML = "<div class='chat-empty'>Loading messages…</div>";
+        /* Silent load: don't clear UI; only show placeholder if it's totally empty. */
+        if (!wrap.firstChild || wrap.querySelector(".chat-empty")) {
+          wrap.innerHTML = "<div class='chat-empty'>Loading messages…</div>";
+        }
         __chatLoadedIds = Object.create(null);
         __sb.from("public_chat_messages")
           .select("id, username, content, video_url, created_at")
@@ -1693,17 +1741,21 @@
           .limit(100)
           .then(function (res) {
             if (res.error) {
-              wrap.innerHTML = "<div class='chat-empty'>Could not load messages.</div>";
+              if (wrap.querySelector(".chat-empty")) {
+                wrap.innerHTML = "<div class='chat-empty'>Could not load messages.</div>";
+              }
               return;
             }
             var rows = (res.data || []).slice().reverse();
             wrap.innerHTML = "";
             if (rows.length === 0) {
               wrap.innerHTML = "<div class='chat-empty'>No messages yet. Be the first to say hi!</div>";
+              __chatHistoryLoaded = true;
               return;
             }
             rows.forEach(function (m) { appendChatMessage(m, false); });
             wrap.scrollTop = wrap.scrollHeight;
+            __chatHistoryLoaded = true;
           });
       }
 
@@ -1855,13 +1907,17 @@
         }
 
         if (tabId === "followersTab") {
-          requestUserProfile();
+          /* Skip refetch if we have fresh data (<30s old) to keep tab switch instant. */
+          var nowMs = Date.now();
+          if (!state.__lastProfileFetch || (nowMs - state.__lastProfileFetch) > 30000) {
+            state.__lastProfileFetch = nowMs;
+            requestUserProfile();
+          }
         }
         if (tabId === "likesTab") {
-          loadChatHistory();
+          /* Load once; realtime keeps it live. No auto-focus to avoid popping the keyboard. */
+          if (!__chatHistoryLoaded) loadChatHistory();
           subscribeChatRealtime();
-          var chatInputEl = document.getElementById("chatInput");
-          if (chatInputEl) setTimeout(function () { try { chatInputEl.focus(); } catch (_e) {} }, 80);
         }
       }
 
@@ -2057,20 +2113,48 @@
       };
 
       window.onAndroidAdResult = function (result) {
-        /* result is a plain string: "completed", "skipped", or "failed" */
+        /* result may be:
+           - plain string: "completed", "skipped", "failed", "rewarded", "ok", etc.
+           - JSON string: {"result":"completed"} or {"status":"...", "ok":true}
+           - boolean true (success) / false (fail)
+           - object: {result|status, ok}                                              */
         state.pendingAdReward = false;
-        updateRewardInfo(); /* re-enable button + restore label */
+        updateRewardInfo();
 
-        if (result === "completed") {
-          /* Ad fully watched — now claim the reward via Supabase */
-          claimBonus("ad_reward");
-          showToast("✅ Ad finished! Claiming +25 stars...", "success", 2000);
-        } else if (result === "skipped") {
-          showToast("⚠️ You closed the ad early. No reward given.", "warn", 2500);
-        } else {
-          /* failed */
-          showToast("❌ Ad failed to load. Try again later.", "warn", 2500);
+        var status = "";
+        if (result === true) {
+          status = "completed";
+        } else if (result === false || result === null || result === undefined) {
+          status = "failed";
+        } else if (typeof result === "string") {
+          var t = result.trim();
+          if (t.charAt(0) === "{") {
+            try {
+              var obj = JSON.parse(t);
+              status = String(obj.result || obj.status || (obj.ok ? "completed" : "failed") || "").toLowerCase();
+            } catch (_e) { status = t.toLowerCase(); }
+          } else {
+            status = t.toLowerCase();
+          }
+        } else if (typeof result === "object") {
+          status = String(result.result || result.status || (result.ok ? "completed" : "failed") || "").toLowerCase();
         }
+
+        var skippedSet = { "skipped": 1, "skip": 1, "closed": 1, "dismissed": 1, "cancel": 1, "cancelled": 1, "canceled": 1 };
+        var failedSet = { "failed": 1, "fail": 1, "error": 1, "not_loaded": 1, "no_ad": 1, "noad": 1, "unavailable": 1 };
+
+        if (skippedSet[status]) {
+          showToast("⚠️ You closed the ad early. No reward given.", "warn", 2500);
+          return;
+        }
+        if (failedSet[status]) {
+          showToast("❌ Ad failed to load. Try again later.", "warn", 2500);
+          return;
+        }
+
+        /* Anything else (completed / rewarded / ok / unknown but fired) → claim reward. */
+        claimBonus("ad_reward");
+        showToast("✅ Ad finished! Claiming +25 stars...", "success", 2000);
       };
 
       window.onAndroidBonusResult = function (payload) {
@@ -2299,6 +2383,7 @@
             requestEarnTarget();
           }
           subscribeChatRealtime();
+          if (!__chatHistoryLoaded) loadChatHistory();
 
           loginBtn.disabled = false;
           loginBtn.textContent = "Continue";
@@ -2377,6 +2462,7 @@
         saveState();
         unsubscribeChatRealtime();
         __chatLoadedIds = Object.create(null);
+        __chatHistoryLoaded = false;
         setChatLinkPreview("");
         var chatWrapEl = document.getElementById("chatMessages");
         if (chatWrapEl) chatWrapEl.innerHTML = "<div class='chat-empty'>Loading messages…</div>";
@@ -2537,6 +2623,7 @@
           requestEarnTarget();
         }
         subscribeChatRealtime();
+        if (!__chatHistoryLoaded) loadChatHistory();
       } else {
         usernameInput.value = state.username;
       }
